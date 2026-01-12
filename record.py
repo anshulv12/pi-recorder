@@ -93,7 +93,30 @@ def record_session(
         time.sleep(5)
         return running  # Continue trying - DON'T create folder
 
-    # Only create session folder AFTER tracker is successfully initialized
+    # Try to get first frame to verify camera is working
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Testing camera...")
+    try:
+        first_frame, _, _ = tracker.next_frame()
+        if first_frame is None:
+            print("Camera not returning frames - check hardware connection")
+            print("Waiting 5 seconds and retrying...")
+            try:
+                tracker.exit()
+            except:
+                pass
+            time.sleep(5)
+            return running  # DON'T create folder
+    except Exception as e:
+        print(f"Error getting first frame: {e}")
+        print("Waiting 5 seconds and retrying...")
+        try:
+            tracker.exit()
+        except:
+            pass
+        time.sleep(5)
+        return running  # DON'T create folder
+
+    # Only create session folder AFTER we verify camera works
     output_dir.mkdir(parents=True, exist_ok=True)
     rgb_dir = output_dir / "rgb_frames"
     rgb_dir.mkdir(exist_ok=True)
