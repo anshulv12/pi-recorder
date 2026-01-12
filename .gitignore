@@ -1,0 +1,12 @@
+# Virtual environment
+venv/
+
+# Recordings (large files, don't commit)
+recordings/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Hand tracker is cloned separately
+hand_tracker/

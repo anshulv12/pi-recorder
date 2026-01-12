@@ -1,0 +1,22 @@
+[Unit]
+Description=OAK-D Hand Tracking Recorder
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/asimov/pi-recorder
+ExecStart=/home/pi/asimov/pi-recorder/venv/bin/python /home/pi/asimov/pi-recorder/record.py --recordings-dir /home/pi/asimov/pi-recorder/recordings
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Give it time to initialize OAK-D
+TimeoutStartSec=60
+
+# Environment
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
