@@ -151,8 +151,19 @@ def record_session(
     with open(output_dir / "camera_info.json", "w") as f:
         json.dump({"intrinsics": intrinsics}, f, indent=2)
 
+    # Write header info to poses file (will append frames as JSONL)
+    poses_file = output_dir / "hand_poses.jsonl"
+    with open(poses_file, "w") as f:
+        # First line is header with metadata
+        header = {
+            "_type": "header",
+            "intrinsics": intrinsics,
+            "landmark_names": HAND_LANDMARK_NAMES,
+            "body_keypoint_names": BODY_KEYPOINT_NAMES,
+        }
+        f.write(json.dumps(header) + "\n")
+
     frame_count = 0
-    hand_poses = []
     timestamps = []
     start_time = time.time()
     last_status_time = start_time
@@ -225,12 +236,17 @@ def record_session(
         frame_name = f"frame_{frame_count:06d}"
         cv2.imwrite(str(rgb_dir / f"{frame_name}.jpg"), frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
 
-        hand_poses.append({
+        # Write pose immediately to JSONL (power-loss safe)
+        frame_pose = {
+            "_type": "frame",
             "frame_idx": frame_count,
             "timestamp_ms": timestamp_ms,
             "hands": hands_data,
             "body": body_data,
-        })
+        }
+        with open(poses_file, "a") as f:
+            f.write(json.dumps(frame_pose) + "\n")
+
         timestamps.append(timestamp_ms)
         frame_count += 1
 
@@ -240,18 +256,9 @@ def record_session(
     except:
         pass
 
-    # Save results
+    # Save final metadata (poses already saved incrementally to JSONL)
     if frame_count > 0:
         actual_duration = timestamps[-1] / 1000.0 if timestamps else 0
-
-        with open(output_dir / "hand_poses.json", "w") as f:
-            json.dump({
-                "frames": hand_poses,
-                "intrinsics": intrinsics,
-                "landmark_names": HAND_LANDMARK_NAMES,
-                "body_keypoint_names": BODY_KEYPOINT_NAMES,
-                "num_frames": frame_count,
-            }, f)
 
         with open(output_dir / "metadata.json", "w") as f:
             json.dump({
@@ -261,8 +268,7 @@ def record_session(
                 "fps": frame_count / actual_duration if actual_duration > 0 else 0,
             }, f, indent=2)
 
-        total_hands = sum(len(f["hands"]) for f in hand_poses)
-        print(f"Session complete: {frame_count} frames, {actual_duration:.1f}s, {total_hands} hand detections")
+        print(f"Session complete: {frame_count} frames, {actual_duration:.1f}s")
     else:
         print("No frames recorded in this session")
 
