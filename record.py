@@ -73,13 +73,9 @@ def record_session(
     """
     global running
 
-    output_dir.mkdir(parents=True, exist_ok=True)
-    rgb_dir = output_dir / "rgb_frames"
-    rgb_dir.mkdir(exist_ok=True)
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Initializing tracker...")
 
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Starting session: {output_dir.name}")
-
-    # Initialize hand tracker
+    # Initialize hand tracker BEFORE creating folder
     try:
         tracker = HandTracker(
             input_src="rgb",
@@ -95,7 +91,14 @@ def record_session(
         print(f"Error initializing tracker: {e}")
         print("Waiting 5 seconds and retrying...")
         time.sleep(5)
-        return running  # Continue trying
+        return running  # Continue trying - DON'T create folder
+
+    # Only create session folder AFTER tracker is successfully initialized
+    output_dir.mkdir(parents=True, exist_ok=True)
+    rgb_dir = output_dir / "rgb_frames"
+    rgb_dir.mkdir(exist_ok=True)
+
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Started session: {output_dir.name}")
 
     # Get camera intrinsics
     intrinsics = {
